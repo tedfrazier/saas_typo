@@ -1,12 +1,18 @@
 class Admin::CategoriesController < Admin::BaseController
   cache_sweeper :blog_sweeper
 
-  def index; redirect_to :action => 'new' ; end
-  def edit; new_or_edit;  end
+  def index
+    redirect_to :action => 'new'
+  end
+  def edit
+    new_or_edit
+  end
 
-  def new 
+  def new
     respond_to do |format|
-      format.html { new_or_edit }
+      format.html {
+        new_or_edit
+      }
       format.js { 
         @category = Category.new
       }
@@ -24,31 +30,42 @@ class Admin::CategoriesController < Admin::BaseController
   private
 
   def new_or_edit
+    
     @categories = Category.find(:all)
-    @category = params[:id] ? Category.find(params[:id]) : 0
-    @category.attributes = params[:category]
-    if request.post?
-      respond_to do |format|
-        format.html { save_category }
-        format.js do 
-          @category.save
-          @article = Article.new
-          @article.categories << @category
-          return render(:partial => 'admin/content/categories')
-        end
+    
+    # check to see if this is new or existing
+      if params[:id] # existing case
+        # set category attributes
+        @category = Category.find(params[:id])
+        @category.attributes = params[:category]
+      else # new case
+        @category = Category.new
+        @category.attributes = params[:category]
       end
-      return
-    end
+      if request.post?
+        save_category
+        return
+      end
     render 'new'
   end
 
   def save_category
-    if @category.save!
-      flash[:notice] = _('Category was successfully saved.')
-    else
-      flash[:error] = _('Category could not be saved.')
+   respond_to do |format|
+      format.html do
+        if @category.save!
+          flash[:notice] = _('Category was successfully saved.')
+        else
+          flash[:error] = _('Category could not be saved.')
+        end
+        redirect_to :action => 'new'
+      end
+      format.js do 
+        @category.save
+        @article = Article.new
+        @article.categories << @category
+        return render(:partial => 'admin/content/categories')
+      end
     end
-    redirect_to :action => 'new'
   end
-
 end
+
